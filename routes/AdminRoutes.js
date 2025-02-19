@@ -1,5 +1,5 @@
 const express = require('express');
-const { createAdmin, adminLogin, getAdminData, createUser, createStaff, getUsers, getStaff, createDepartment, getDepartments, getAvailableDepartments } = require('../controllers/AdminController');
+const { createAdmin, adminLogin, getAdminData, createUser, createStaff, getUsers, getStaff, createDepartment, getDepartments, getAvailableDepartments, deleteStaff, deleteUser, updateUser } = require('../controllers/AdminController');
 const router = express.Router();
 router.use(express.json())
 router.use(express.urlencoded({extended:true}))
@@ -18,5 +18,10 @@ router.get("/getdepartments",getDepartments)
 router.get("/getavailabledepartments",getAvailableDepartments)
 router.get("/getusers",getUsers)
 router.get("/getstaff",getStaff)
+
+// delete
+router.delete("/deletestaff/:id",deleteStaff)
+router.delete("/deleteuser/:id",deleteUser)
+router.put("/updateuser/:id",updateUser)
 
 module.exports = router;

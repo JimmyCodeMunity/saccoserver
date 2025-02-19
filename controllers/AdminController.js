@@ -291,6 +291,96 @@ const getAvailableDepartments = async (req, res) => {
     }
 };
 
+// find staff by id and delete
+const deleteStaff = async (req, res) => {
+    const { id } = req.params;
+
+
+    try {
+        // Find the staff by ID
+        const staff = await Staff.findById(id);
+        if (!staff) {
+            console.log("Staff not found");
+            return res.status(404).json({ message: "Staff not found" });
+        }
+        console.log("staff id", staff)
+        // return
+
+        // Check if the staff is a department head
+        if (staff.departmentid) {
+            await Department.findOneAndUpdate(
+                { _id: staff.departmentid, depthead: id },
+                { $set: { depthead: null, assignedStatus: false } }
+            );
+        }
+
+        // Delete the staff
+        await Staff.findByIdAndDelete(id);
+
+        console.log("Staff deleted successfully:", staff);
+        return res.status(200).json({ message: "Staff deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting staff", error);
+        return res.status(500).json({ message: "Error deleting staff" });
+    }
+};
+
+
+// delete users
+const deleteUser = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Find the user by ID
+        const user = await User.findById(id);
+        if (!user) {
+            console.log("User not found");
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Delete the user
+        await User.findByIdAndDelete(id);
+
+        console.log("User deleted successfully:", user);
+        return res.status(200).json({ message: "User deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting user", error);
+        return res.status(500).json({ message: "Error deleting user" });
+    }
+};
+
+
+// update user
+const updateUser = async (req, res) => {
+    const { id } = req.params;
+    const { username, email, phone, password } = req.body;
+    console.log("Updating user:", { id, username, email, phone, password });
+    // return
+
+    // find by id and update
+    try {
+        const user = await User.findByIdAndUpdate(id, { username, email, phone }, { new: true });
+        if (!user) {
+            console.log("User not found");
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Hash password if provided
+        if (password) {
+            const hashedPassword = await bcrypt.hash(password.trim(), 10);
+            user.password = hashedPassword;
+        }
+
+        await user.save();
+        console.log("User updated successfully:", user);
+        return res.status(200).json({ message: "User updated successfully", user });
+    } catch (error) {
+        console.error("Error updating user", error);
+        return res.status(500).json({ message: "Error updating user" });
+    }
+}
+
+
 
 
 module.exports = {
@@ -303,5 +393,8 @@ module.exports = {
     getStaff,
     createDepartment,
     getDepartments,
-    getAvailableDepartments
+    getAvailableDepartments,
+    deleteStaff,
+    deleteUser,
+    updateUser
 }

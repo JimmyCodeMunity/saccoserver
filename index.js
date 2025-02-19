@@ -8,11 +8,11 @@ const app = express();
 app.use(express.json())
 app.use(cors())
 
-if (process.env.NODE_ENV === 'production') {
-    require('dotenv').config({
-        path: './.env'
-    })
-}
+// if (process.env.NODE_ENV !== 'production') {
+require('dotenv').config({
+    path: './.env'
+})
+// }
 const port = process.env.PORT;
 const database = process.env.DBURL;
 
@@ -34,5 +34,9 @@ mongoose.connect(database).then(() => {
 
 
 const adminroutes = require('./routes/AdminRoutes')
+const userroutes = require('./routes/UserRoutes')
+const staffroutes = require('./routes/StaffRoutes')
 
 app.use('/api/v1/admin/', adminroutes)
+app.use('/api/v1/user/', userroutes)
+app.use('/api/v1/staff/', staffroutes)
