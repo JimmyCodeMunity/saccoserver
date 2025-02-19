@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Admin = require("../models/AdminModel");
 const User = require('../models/UserModel');
+const Ticket = require('../models/TicketModel');
 
 
 // if (process.env.NODE_ENV !== 'production') {
@@ -155,6 +156,51 @@ const updateUser = async (req, res) => {
 
 
 
+// create a ticket
+const createTicket = async (req, res) => {
+    const { userid, departmentid, priority, description, title } = req.body;
+    console.log(userid, departmentid, priority, description,title)
+    // return
+    try {
+        const ticket = await Ticket.create({
+            userid,
+            departmentid,
+            priority,
+            description,
+            title,
+        })
+        
+        console.log("ticket saved", ticket)
+        res.status(200).json(ticket)
+    } catch (error) {
+        console.log("error adding ticket", error)
+        res.status(500).json({ message: "error adding ticket" })
+
+    }
+}
+
+
+const getTicketsByUser = async (req, res) => {
+    const { userid } = req.params; // Get userid from request parameters
+    try {
+        const tickets = await Ticket.find({ userid })
+            .populate('departmentid', 'deptname depthead assignedStatus')
+            .populate('userid', 'username email');
+
+        if (!tickets.length) {
+            return res.status(404).json({ message: "No tickets found for this user" });
+        }
+
+        return res.status(200).json(tickets);
+    } catch (error) {
+        console.error("Error getting tickets by user", error);
+        res.status(500).json({ message: "Error getting tickets" });
+    }
+};
+
+
+
+
 
 module.exports = {
     userLogin,
@@ -162,5 +208,7 @@ module.exports = {
     createUser,
 
     deleteUser,
-    updateUser
+    updateUser,
+    createTicket,
+    getTicketsByUser
 }

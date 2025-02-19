@@ -1,5 +1,5 @@
 const express = require('express');
-const { getUserData, userLogin, deleteUser, updateUser, createUser } = require('../controllers/UserController');
+const { getUserData, userLogin, deleteUser, updateUser, createUser, createTicket, getTicketsByUser } = require('../controllers/UserController');
 const router = express.Router();
 router.use(express.json())
 router.use(express.urlencoded({extended:true}))
@@ -11,6 +11,8 @@ router.use(express.urlencoded({extended:true}))
 router.post("/userlogin",userLogin)
 router.post("/userdata",getUserData)
 router.post("/createuser",createUser)
+router.post("/createticket",createTicket)
+router.get("/getmytickets/:userid",getTicketsByUser)
 
 
 // delete

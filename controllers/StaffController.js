@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Staff = require('../models/StaffModel');
+const Ticket = require('../models/TicketModel');
 
 
 // if (process.env.NODE_ENV !== 'production') {
@@ -153,13 +154,56 @@ const updateStaff = async (req, res) => {
 }
 
 
+const getTickets = async (req, res) => {
+    try {
+        const ticket = await Ticket.findOne({})
+            .populate('departmentid', 'deptname depthead assignedStatus')
+            .populate('userid', 'username email');
+
+        console.log("ticket", ticket)
+        return res.status(200).json(ticket)
+    } catch (error) {
+        console.error("Error getting tickets", error);
+        res.status(500).json({ message: "Error getting tickets" });
+
+    }
+}
+
+const getTicketsByDeptHead = async (req, res) => {
+    const { depthead } = req.params; // Get depthead (staff ID) from request parameters
+    try {
+        const tickets = await Ticket.find()
+            .populate({
+                path: 'departmentid',
+                match: { depthead }, // Filter only departments managed by this depthead
+                select: 'deptname depthead assignedStatus'
+            })
+            .populate('userid', 'username email');
+
+        // Filter out tickets where departmentid is null due to no match
+        const filteredTickets = tickets.filter(ticket => ticket.departmentid !== null);
+
+        if (!filteredTickets.length) {
+            return res.status(404).json({ message: "No tickets found for this department head" });
+        }
+
+        return res.status(200).json(filteredTickets);
+    } catch (error) {
+        console.error("Error getting tickets by department head", error);
+        res.status(500).json({ message: "Error getting tickets" });
+    }
+};
+
+
+
 
 
 module.exports = {
     staffLogin,
     getStaffData,
     createStaff,
-
+    getTickets,
     deleteStaff,
-    updateStaff
+    updateStaff,
+    getTicketsByDeptHead
 }
