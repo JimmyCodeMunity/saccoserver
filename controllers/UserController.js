@@ -53,7 +53,7 @@ const getUserData = async (req, res) => {
         } else {
             const user = await jwt.verify(token, authtoken);
             const useremail = user.email
-            console.log("useremail: ", useremail)
+            // console.log("useremail: ", useremail)
             const data = await User.findOne({ email: useremail });
             return res.status(200).json(data);
         }
@@ -159,7 +159,7 @@ const updateUser = async (req, res) => {
 // create a ticket
 const createTicket = async (req, res) => {
     const { userid, departmentid, priority, description, title } = req.body;
-    console.log(userid, departmentid, priority, description,title)
+    console.log(userid, departmentid, priority, description, title)
     // return
     try {
         const ticket = await Ticket.create({
@@ -169,7 +169,7 @@ const createTicket = async (req, res) => {
             description,
             title,
         })
-        
+
         console.log("ticket saved", ticket)
         res.status(200).json(ticket)
     } catch (error) {
@@ -198,6 +198,68 @@ const getTicketsByUser = async (req, res) => {
     }
 };
 
+const getUserOpenTickets = async (req, res) => {
+    const { userid } = req.params; // Get userid from request parameters
+    try {
+        const tickets = await Ticket.find({ userid, status: "Open" }) // Filter by status "Open"
+            .populate('departmentid', 'deptname depthead assignedStatus')
+            .populate('userid', 'username email');
+
+        if (!tickets.length) {
+            return res.status(404).json({ message: "No open tickets found for this user" });
+        }
+
+        return res.status(200).json(tickets);
+    } catch (error) {
+        console.error("Error getting open tickets by user", error);
+        res.status(500).json({ message: "Error getting tickets" });
+    }
+};
+
+
+const getUserClosedTickets = async (req, res) => {
+    const { userid } = req.params; // Get userid from request parameters
+    try {
+        const tickets = await Ticket.find({ userid, status: "Closed" }) // Filter by status "Open"
+            .populate('departmentid', 'deptname depthead assignedStatus')
+            .populate('userid', 'username email');
+
+        if (!tickets.length) {
+            return res.status(404).json({ message: "No closed tickets found for this user" });
+        }
+
+        return res.status(200).json(tickets);
+    } catch (error) {
+        console.error("Error getting closed tickets by user", error);
+        res.status(500).json({ message: "Error getting closed tickets" });
+    }
+};
+
+
+// delete users
+const deleteTicket = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Find the user by ID
+        const ticket = await Ticket.findById(id);
+        if (!ticket) {
+            console.log("Ticket not found");
+            return res.status(404).json({ message: "Ticket not found" });
+        }
+
+        // Delete the user
+        await Ticket.findByIdAndDelete(id);
+
+        console.log("Ticket deleted successfully:", ticket);
+        return res.status(200).json({ message: "Ticket deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting Ticket", error);
+        return res.status(500).json({ message: "Error deleting Ticket" });
+    }
+};
+
+
 
 
 
@@ -210,5 +272,8 @@ module.exports = {
     deleteUser,
     updateUser,
     createTicket,
-    getTicketsByUser
+    getTicketsByUser,
+    getUserOpenTickets,
+    getUserClosedTickets,
+    deleteTicket
 }

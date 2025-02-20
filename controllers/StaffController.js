@@ -53,7 +53,10 @@ const getStaffData = async (req, res) => {
             const staff = await jwt.verify(token, authtoken);
             const staffemail = staff.email
             console.log("staffemail: ", staffemail)
-            const data = await Staff.findOne({ email: staffemail });
+            const data = await Staff.findOne({ email: staffemail })
+                .populate('departmentid', 'deptname depthead assignedStatus')
+                ;
+            console.log("staff data", data)
             return res.status(200).json(data);
         }
 
@@ -154,9 +157,27 @@ const updateStaff = async (req, res) => {
 }
 
 
-const getTickets = async (req, res) => {
+const getStaffTickets = async (req, res) => {
+    const {departmentid} =req.params;
     try {
-        const ticket = await Ticket.findOne({})
+        const ticket = await Ticket.find({departmentid,status:"Open"})
+            .populate('departmentid', 'deptname depthead assignedStatus')
+            .populate('userid', 'username email');
+
+        console.log("ticket", ticket)
+        return res.status(200).json(ticket)
+    } catch (error) {
+        console.error("Error getting tickets", error);
+        res.status(500).json({ message: "Error getting tickets" });
+
+    }
+}
+
+
+const getStaffClosedTickets = async (req, res) => {
+    const {departmentid} =req.params;
+    try {
+        const ticket = await Ticket.find({departmentid,status:"Closed"})
             .populate('departmentid', 'deptname depthead assignedStatus')
             .populate('userid', 'username email');
 
@@ -198,12 +219,16 @@ const getTicketsByDeptHead = async (req, res) => {
 
 
 
+
+
+
 module.exports = {
     staffLogin,
     getStaffData,
     createStaff,
-    getTickets,
+    getStaffTickets,
     deleteStaff,
     updateStaff,
-    getTicketsByDeptHead
+    getTicketsByDeptHead,
+    getStaffClosedTickets
 }
