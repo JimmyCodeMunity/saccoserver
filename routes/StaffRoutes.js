@@ -1,5 +1,5 @@
 const express = require('express');
-const { staffLogin, getStaffData, createStaff, deleteStaff, updateStaff, getTickets, getTicketsByDeptHead, getStaffTickets, getStaffClosedTickets } = require('../controllers/StaffController');
+const { staffLogin, getStaffData, createStaff, deleteStaff, updateStaff, getTickets, getTicketsByDeptHead, getStaffTickets, getStaffClosedTickets, updateTicketStaff } = require('../controllers/StaffController');
 const router = express.Router();
 router.use(express.json())
 router.use(express.urlencoded({ extended: true }))
@@ -16,6 +16,9 @@ router.post("/createstaff", createStaff)
 // router.get("/getticketsbydeptid/:departmentid", getTicketsByDeptHead)
 router.get("/getstafftickets/:departmentid", getStaffTickets)
 router.get("/getstaffclosedtickets/:departmentid", getStaffClosedTickets)
+
+
+router.put("/updateticket/:ticketid",updateTicketStaff)
 
 
 // delete

@@ -21,9 +21,13 @@ const ticketSchema = new mongoose.Schema({
     priority: {
         type: String,
     },
-    status:{
+    status: {
         type: String,
         default: 'Open'
+    },
+    comment: {
+        type: String,
+        default: null
     },
     createdAt: {
         type: Date,

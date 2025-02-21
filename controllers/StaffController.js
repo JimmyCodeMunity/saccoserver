@@ -56,7 +56,7 @@ const getStaffData = async (req, res) => {
             const data = await Staff.findOne({ email: staffemail })
                 .populate('departmentid', 'deptname depthead assignedStatus')
                 ;
-            console.log("staff data", data)
+            // console.log("staff data", data)
             return res.status(200).json(data);
         }
 
@@ -164,7 +164,7 @@ const getStaffTickets = async (req, res) => {
             .populate('departmentid', 'deptname depthead assignedStatus')
             .populate('userid', 'username email');
 
-        console.log("ticket", ticket)
+        // console.log("ticket", ticket)
         return res.status(200).json(ticket)
     } catch (error) {
         console.error("Error getting tickets", error);
@@ -181,7 +181,7 @@ const getStaffClosedTickets = async (req, res) => {
             .populate('departmentid', 'deptname depthead assignedStatus')
             .populate('userid', 'username email');
 
-        console.log("ticket", ticket)
+        // console.log("ticket", ticket)
         return res.status(200).json(ticket)
     } catch (error) {
         console.error("Error getting tickets", error);
@@ -216,6 +216,29 @@ const getTicketsByDeptHead = async (req, res) => {
 };
 
 
+// update ticket by id
+const updateTicketStaff = async (req, res) => {
+    const { ticketid } = req.params;
+    const { status,comment } = req.body;
+    // console.log("Updating ticket:", { id, status });
+
+    try {
+        const ticket = await Ticket.findByIdAndUpdate(ticketid, { status,comment }, { new: true });
+        if (!ticket) {
+            console.log("Ticket not found");
+            return res.status(404).json({ message: "Ticket not found" });
+        }
+
+        await ticket.save();
+        console.log("Ticket updated successfully:", ticket);
+        return res.status(200).json({ message: "Ticket updated successfully", ticket });
+    } catch (error) {
+        console.error("Error updating ticket", error);
+        return res.status(500).json({ message: "Error updating ticket" });
+    }
+}
+
+
 
 
 
@@ -230,5 +253,6 @@ module.exports = {
     deleteStaff,
     updateStaff,
     getTicketsByDeptHead,
-    getStaffClosedTickets
+    getStaffClosedTickets,
+    updateTicketStaff
 }
