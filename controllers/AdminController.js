@@ -4,7 +4,7 @@ const Admin = require("../models/AdminModel");
 const User = require('../models/UserModel');
 const Staff = require('../models/StaffModel');
 const Department = require('../models/DepartmentModel');
-
+const nodemailer = require('nodemailer')
 
 if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config({
@@ -14,6 +14,49 @@ if (process.env.NODE_ENV !== 'production') {
 
 
 const authtoken = process.env.JWT_SECRET;
+const emailpass = process.env.EMAIL_PASSWORD;
+const verifyemail = process.env.VERIFY_EMAIL;
+// console.log("my auth token: " + authtoken);
+
+const sendEmail = async (req,res) => {
+    const { to, subject, message } = req.body;
+
+    if (!to || to.length === 0) {
+        return res.status(400).json({ error: "No recipients provided." });
+    }
+
+    try {
+        // Configure nodemailer transporter
+        const transporter = nodemailer.createTransport({
+            service: "gmail", // Use your email service provider
+            port: 587,
+            secure: true,
+            auth: {
+                user: verifyemail, // Your email
+                pass: emailpass, // Your email password or app password
+            },
+        });
+
+        // Convert email array into a string (comma-separated)
+        const recipients = to.join(",");
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: recipients, // Send to multiple recipients
+            subject: subject,
+            text: message,
+        };
+
+        // Send email
+        const info = await transporter.sendMail(mailOptions);
+
+        console.log("Emails sent: ", info.response);
+        res.status(200).json({ success: true, message: "Emails sent successfully!" });
+    } catch (error) {
+        console.error("Error sending email:", error);
+        res.status(500).json({ error: "Failed to send email" });
+    }
+};
 
 
 const createAdmin = async (req, res) => {
@@ -396,5 +439,6 @@ module.exports = {
     getAvailableDepartments,
     deleteStaff,
     deleteUser,
-    updateUser
+    updateUser,
+    sendEmail
 }
