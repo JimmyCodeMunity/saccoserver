@@ -5,6 +5,7 @@ const User = require('../models/UserModel');
 const Staff = require('../models/StaffModel');
 const Department = require('../models/DepartmentModel');
 const nodemailer = require('nodemailer')
+const crypto = require("crypto")
 
 if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config({
@@ -18,7 +19,15 @@ const emailpass = process.env.EMAIL_PASSWORD;
 const verifyemail = process.env.VERIFY_EMAIL;
 // console.log("my auth token: " + authtoken);
 
-const sendEmail = async (req,res) => {
+
+const generateRandomPassword = (length = 12) => {
+    return crypto.randomBytes(length)
+        .toString("base64")
+        .replace(/[^a-zA-Z0-9]/g, "") // Remove special characters
+        .slice(0, length); // Trim to required length
+};
+
+const sendEmail = async (req, res) => {
     const { to, subject, message } = req.body;
 
     if (!to || to.length === 0) {
@@ -57,6 +66,112 @@ const sendEmail = async (req,res) => {
         res.status(500).json({ error: "Failed to send email" });
     }
 };
+
+
+// emmail
+const sendUserCredentials = async (username, email, password, loginUrl) => {
+    try {
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            port: 587,
+            secure: true,
+            auth: {
+                user: verifyemail,
+                pass: emailpass,
+            },
+        });
+
+        // Inject dynamic values into the HTML template
+        const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Welcome to Karura Sacco</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    background-color: #f4f4f4;
+                    margin: 0;
+                    padding: 0;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: 20px auto;
+                    background: #ffffff;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+                }
+                .header {
+                    text-align: center;
+                    padding: 20px 0;
+                    background:rgb(29, 177, 41);
+                    color: white;
+                    font-size: 24px;
+                    border-top-left-radius: 8px;
+                    border-top-right-radius: 8px;
+                }
+                .content {
+                    padding: 20px;
+                    color: #333;
+                    line-height: 1.6;
+                }
+                .details {
+                    background: #f8f9fa;
+                    padding: 15px;
+                    border-radius: 5px;
+                    margin: 20px 0;
+                }
+                .details p {
+                    margin: 5px 0;
+                    font-weight: bold;
+                }
+                .footer {
+                    text-align: center;
+                    padding: 10px;
+                    font-size: 14px;
+                    color: #666;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    Welcome to Karura Sacco
+                </div>
+                <div class="content">
+                    <p>Hello <strong>${username}</strong>,</p>
+                    <p>Welcome! Your account has been successfully created. Below are your login details:</p>
+                    <div class="details">
+                        <p>Username: ${username}</p>
+                        <p>Email: ${email}</p>
+                        <p>Password: ${password}</p>
+                    </div>
+                    <p>Please keep your credentials safe and do not share them with anyone.</p>
+                    <p>Click <a href="${loginUrl}" style="color: #007bff; text-decoration: none;">here</a> to login.</p>
+                </div>
+                <div class="footer">
+                    &copy; 2025 Your Company. All rights reserved.
+                </div>
+            </div>
+        </body>
+        </html>`;
+
+        const info = await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Welcome to Karura Sacco',
+            html: htmlContent // Use the dynamically generated HTML content
+        });
+
+        console.log("Email sent successfully!!", info.messageId);
+    } catch (error) {
+        console.log("Error sending email", error);
+    }
+};
+
 
 
 const createAdmin = async (req, res) => {
@@ -150,36 +265,72 @@ const getAdminData = async (req, res) => {
 }
 
 
-const createUser = async (req, res) => {
-    const { username, email, phone, password } = req.body
-    try {
-        const existinguser = await User.findOne({ email })
-        if (existinguser) {
-            console.log("User with that email already exists");
-            return res.status(400).json({ message: "User with that email exists" });
-        }
-        else {
-            const hashedPassword = await bcrypt.hash(password.trim(), 10);
-            console.log("Hashed password:", hashedPassword);
-            const user = await User.create({
-                username: username.trim(),
-                email: email.trim(),
-                phone: phone.trim(),
-                password: hashedPassword,
-            });
-            console.log("User created successfully:", user);
-            return res.status(201).json({ message: "User created successfully", user });
-        }
-    } catch (error) {
-        console.error("error creating user", error);
-        res.status(500).json({ message: "Error creating user" });
+// const createUser = async (req, res) => {
+//     const { username, email, phone, password } = req.body
+//     const loginUrl = "https://karurauserapp.vercel.app/login"
+//     try {
+//         const existinguser = await User.findOne({ email })
+//         if (existinguser) {
+//             console.log("User with that email already exists");
+//             return res.status(400).json({ message: "User with that email exists" });
+//         }
+//         else {
+//             const hashedPassword = await bcrypt.hash(password.trim(), 10);
+//             console.log("Hashed password:", hashedPassword);
+//             const user = await User.create({
+//                 username: username.trim(),
+//                 email: email.trim(),
+//                 phone: phone.trim(),
+//                 password: hashedPassword,
+//             });
+//             await sendUserCredentials(username, email, password, loginUrl);
+//             console.log("User created successfully:", user);
+//             return res.status(201).json({ message: "User created successfully", user });
+//         }
+//     } catch (error) {
+//         console.error("error creating user", error);
+//         res.status(500).json({ message: "Error creating user" });
 
-    }
-}
+//     }
+// }
 
 
 
 // create staff
+
+
+const createUser = async (req, res) => {
+    const { username, email, phone } = req.body;
+    const loginUrl = "https://karurauserapp.vercel.app/login";
+
+    try {
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            console.log("User with that email already exists");
+            return res.status(400).json({ message: "User with that email exists" });
+        }
+
+        const password = generateRandomPassword(); // Generate random password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const user = await User.create({
+            username: username.trim(),
+            email: email.trim(),
+            phone: phone.trim(),
+            password: hashedPassword,
+        });
+
+        await sendUserCredentials(username, email, password, loginUrl);
+
+        console.log("User created successfully:", user);
+        return res.status(201).json({ message: "User created successfully", user });
+    } catch (error) {
+        console.error("Error creating user", error);
+        res.status(500).json({ message: "Error creating user" });
+    }
+};
+
+
 const createStaff = async (req, res) => {
     const { username, email, phone, password, departmentid } = req.body;
     console.log("Selected Dept ID:", departmentid);
