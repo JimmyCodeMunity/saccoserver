@@ -5,7 +5,8 @@ const User = require('../models/UserModel');
 const Staff = require('../models/StaffModel');
 const Department = require('../models/DepartmentModel');
 const nodemailer = require('nodemailer')
-const crypto = require("crypto")
+const crypto = require("crypto");
+const Ticket = require('../models/TicketModel');
 
 if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config({
@@ -574,10 +575,43 @@ const updateUser = async (req, res) => {
     }
 }
 
+// get open tickets
+const getOpenTickets = async (req, res) => {
+    try {
+        const ticket = await Ticket.find({status:"Open"})
+            .populate('departmentid', 'deptname depthead assignedStatus')
+            .populate('userid', 'username email');
+
+        // console.log("ticket", ticket)
+        return res.status(200).json(ticket)
+    } catch (error) {
+        console.error("Error getting tickets", error);
+        res.status(500).json({ message: "Error getting tickets" });
+
+    }
+}
+// get closed tickets
+const getClosedTickets = async (req, res) => {
+    try {
+        const ticket = await Ticket.find({status:"Closed"})
+            .populate('departmentid', 'deptname depthead assignedStatus')
+            .populate('userid', 'username email');
+
+        // console.log("ticket", ticket)
+        return res.status(200).json(ticket)
+    } catch (error) {
+        console.error("Error getting tickets", error);
+        res.status(500).json({ message: "Error getting tickets" });
+
+    }
+}
+
 
 
 
 module.exports = {
+    getOpenTickets,
+    getClosedTickets,
     createAdmin,
     adminLogin,
     getAdminData,

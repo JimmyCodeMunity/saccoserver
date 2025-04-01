@@ -3,16 +3,22 @@ const jwt = require('jsonwebtoken');
 const Admin = require("../models/AdminModel");
 const User = require('../models/UserModel');
 const Ticket = require('../models/TicketModel');
+const nodemailer = require('nodemailer')
 
 
-// if (process.env.NODE_ENV !== 'production') {
-require('dotenv').config({
-    path: './.env'
-})
-// }
+
+
+
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config({
+        path: './.env'
+    })
+}
 
 
 const authtoken = process.env.JWT_SECRET;
+const emailpass = process.env.EMAIL_PASSWORD;
+const verifyemail = process.env.VERIFY_EMAIL;
 
 
 
@@ -154,7 +160,111 @@ const updateUser = async (req, res) => {
     }
 }
 
+const sendTicketConfirm = async ({username, email, title, description,ticketid}) => {
+    console.log("rec",email)
+    try {
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            port: 587,
+            secure: true,
+            auth: {
+                user: verifyemail,
+                pass: emailpass,
+            },
+        });
 
+        // get current year
+        const currentYear = new Date().getFullYear();
+
+        // Inject dynamic values into the HTML template
+        const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Your ticket has been submitted</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    background-color: #f4f4f4;
+                    margin: 0;
+                    padding: 0;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: 20px auto;
+                    background: #ffffff;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+                }
+                .header {
+                    text-align: center;
+                    padding: 20px 0;
+                    background:rgb(29, 177, 41);
+                    color: white;
+                    font-size: 24px;
+                    border-top-left-radius: 8px;
+                    border-top-right-radius: 8px;
+                }
+                .content {
+                    padding: 20px;
+                    color: #333;
+                    line-height: 1.6;
+                }
+                .details {
+                    background: #f8f9fa;
+                    padding: 15px;
+                    border-radius: 5px;
+                    margin: 20px 0;
+                }
+                .details p {
+                    margin: 5px 0;
+                    font-weight: bold;
+                }
+                .footer {
+                    text-align: center;
+                    padding: 10px;
+                    font-size: 14px;
+                    color: #666;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    Ticket Response
+                </div>
+                <div class="content">
+                    <p>Hello <strong>${username}</strong>,</p>
+                    <p>Your Ticket has been submitted successfully:</p>
+                    <div class="details">
+                        <p>Ticket Number: #${ticketid}</p>
+                        <p>Title: ${title}</p>
+                    </div>
+                    <p>We shall email you when your ticket is solved.</p>
+                    
+                </div>
+                <div class="footer">
+                    &copy; ${currentYear} Karura Sacco. All rights reserved.
+                </div>
+            </div>
+        </body>
+        </html>`;
+
+        const info = await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: `Ticket ${ticketid} Submitted`,
+            html: htmlContent // Use the dynamically generated HTML content
+        });
+
+        console.log("Email sent successfully!!", info.messageId);
+    } catch (error) {
+        console.log("Error sending email", error);
+    }
+};
 
 // create a ticket
 const createTicket = async (req, res) => {
@@ -170,7 +280,19 @@ const createTicket = async (req, res) => {
             title,
         })
 
+        // const createdticket = await Ticket.findById(ticket._id)
+        const createdticket = await Ticket.findById(ticket._id)
+            .populate('departmentid', 'deptname depthead assignedStatus')
+            .populate('userid', 'username email');
         console.log("ticket saved", ticket)
+        console.log("created ticket saved", createdticket)
+        sendTicketConfirm({
+            username: createdticket?.userid?.username,
+            email: createdticket?.userid?.email,
+            title,
+            description ,
+            ticketid:createdticket?._id// replace with actual login URL
+        })
         res.status(200).json(ticket)
     } catch (error) {
         console.log("error adding ticket", error)
