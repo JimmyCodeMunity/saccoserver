@@ -576,32 +576,143 @@ const updateUser = async (req, res) => {
 }
 
 // get open tickets
+// const getOpenTickets = async (req, res) => {
+//     try {
+//         const ticket = await Ticket.find({status:"Open"})
+//             .populate('departmentid', 'deptname depthead assignedStatus')
+//             .populate('userid', 'username email')
+//             .sort({createdAt:-1})
+//             .skip((page-1) * limit)
+//             .limit(limit)
+
+//         // console.log("ticket", ticket)
+//         return res.status(200).json(ticket)
+//     } catch (error) {
+//         console.error("Error getting tickets", error);
+//         res.status(500).json({ message: "Error getting tickets" });
+
+//     }
+// }
+
+
 const getOpenTickets = async (req, res) => {
     try {
-        const ticket = await Ticket.find({status:"Open"})
-            .populate('departmentid', 'deptname depthead assignedStatus')
-            .populate('userid', 'username email');
+        let { page, limit } = req.query;
 
-        // console.log("ticket", ticket)
-        return res.status(200).json(ticket)
+        // Ensure page and limit are numbers
+        page = parseInt(page);
+        limit = parseInt(limit);
+
+        if (page < 1 || limit < 1) {
+            return res.status(400).json({ message: "Invalid pagination parameters" });
+        }
+
+        const totalTickets = await Ticket.countDocuments({ status: "Open" });
+
+        const tickets = await Ticket.find({ status: "Open" })
+            .populate('departmentid', 'deptname depthead assignedStatus')
+            .populate('userid', 'username email')
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(limit);
+
+        return res.status(200).json({
+            tickets,
+            currentPage: page,
+            totalPages: Math.ceil(totalTickets / limit),
+            totalTickets,
+        });
     } catch (error) {
         console.error("Error getting tickets", error);
         res.status(500).json({ message: "Error getting tickets" });
+    }
+};
+
+// get closed tickets
+// const getClosedTickets = async (req, res) => {
+//     try {
+//         const ticket = await Ticket.find({status:"Closed"})
+//             .populate('departmentid', 'deptname depthead assignedStatus')
+//             .populate('userid', 'username email');
+
+//         // console.log("ticket", ticket)
+//         return res.status(200).json(ticket)
+//     } catch (error) {
+//         console.error("Error getting tickets", error);
+//         res.status(500).json({ message: "Error getting tickets" });
+
+//     }
+// }
+
+const getClosedTickets = async (req, res) => {
+    try {
+        let { page, limit } = req.query;
+
+        // Ensure page and limit are numbers
+        page = parseInt(page);
+        limit = parseInt(limit);
+
+        if (page < 1 || limit < 1) {
+            return res.status(400).json({ message: "Invalid pagination parameters" });
+        }
+
+        const totalTickets = await Ticket.countDocuments({ status: "Closed" });
+
+        const tickets = await Ticket.find({ status: "Closed" })
+            .populate('departmentid', 'deptname depthead assignedStatus')
+            .populate('userid', 'username email')
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(limit);
+
+        return res.status(200).json({
+            tickets,
+            currentPage: page,
+            totalPages: Math.ceil(totalTickets / limit),
+            totalTickets,
+        });
+    } catch (error) {
+        console.error("Error getting tickets", error);
+        res.status(500).json({ message: "Error getting tickets" });
+    }
+};
+
+
+// reassig department
+const reassignDept = async (req, res) => {
+    const { id } = req.params;
+    const { departmentid } = req.body;
+    console.log("dept id", departmentid)
+    // return
+    try {
+        const dept = await Ticket.findByIdAndUpdate(id, { departmentid: departmentid }, { new: true });
+        if (!dept) {
+            console.log("Dept not found");
+            return res.status(404).json({ message: "Staff not found" });
+        }
+        res.status(200).json(dept)
+
+    } catch (error) {
+        res.status(500).json({ message: "error reassigning dept" })
 
     }
 }
-// get closed tickets
-const getClosedTickets = async (req, res) => {
-    try {
-        const ticket = await Ticket.find({status:"Closed"})
-            .populate('departmentid', 'deptname depthead assignedStatus')
-            .populate('userid', 'username email');
 
-        // console.log("ticket", ticket)
-        return res.status(200).json(ticket)
+
+const deleteTicket = async (req, res) => {
+    const { id } = req.params;
+    // return
+    try {
+        const dept = await Ticket.findByIdAndDelete(id);
+        if (!dept) {
+            console.log("Dept not found");
+            return res.status(404).json({ message: "Dept not found" });
+        }
+        console.log("dept deleted",dept)
+        res.status(200).json(dept)
+
     } catch (error) {
-        console.error("Error getting tickets", error);
-        res.status(500).json({ message: "Error getting tickets" });
+        res.status(500).json({ message: "error reassigning dept" })
 
     }
 }
@@ -625,5 +736,7 @@ module.exports = {
     deleteStaff,
     deleteUser,
     updateUser,
-    sendEmail
+    sendEmail,
+    reassignDept,
+    deleteTicket
 }
